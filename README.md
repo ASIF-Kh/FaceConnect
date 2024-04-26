@@ -46,6 +46,9 @@ env\Scripts\activate
 ```bash
 pip3 install -r requirements.txt
 ```
+if you are having problems then:
+  install `cmake` in your platform
+  Follow this link: https://gist.github.com/ageitgey/629d75c1baac34dfa5ca2a1928a7aeaf
 
 
 ### 6. Copy Local Settings
