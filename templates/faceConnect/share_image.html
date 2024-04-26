@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Share Detected Images{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card my-5">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Processed Images and Detected Faces</h2>
+                    {% for image_name, details in detected_faces.items %}
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ image_name }}</h5>
+                            <img src="{{ details.url }}" alt="Processed Image" class="img-fluid mb-3">
+                            <div>
+                                <strong>Detected Faces:</strong>
+                                <ul>
+                                    {% for face in details.faces_found %}
+                                    <li data-image="{{ image_name }}" data-image-url="{{ details.url }}">
+                                        <span class="name"> Name: {{ face.name }}</span>
+                                        <br>
+                                        <span class="email">Email: {{ face.email }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <button class="btn btn-primary" onclick="sendEmail('{{ image_name }}', '{{ details.url }}')">Send Email</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="text-center mt-4">
+                        <button class="btn btn-success" onclick="sendEmailToAll()">Send Email to All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+function sendEmail(imageName, imageUrl) {
+    const emailElements = document.querySelectorAll(`[data-image='${imageName}'] .email`);
+    let emails = [];
+    emailElements.forEach(element => {
+        emails.push(element.textContent);
+    });
+    
+    fetch('/send_email/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')  // Ensure CSRF token is available
+        },
+        body: JSON.stringify({
+            emails: emails,
+            imageUrl: imageUrl  // Now sending imageUrl along with emails
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);  // Alert the user about the status
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

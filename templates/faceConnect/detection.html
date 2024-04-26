@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+
+{% block title %}Group Image Upload{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card my-5">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Upload Group Images</h2>
+                <form method="post" action="{% url 'faceConnect:detect_individuals' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div id="group-image-upload-container">
+                        <!-- Group Image Upload Wrapper -->
+                        <div class="group-image-upload-wrapper mb-3">
+                            <input type="file" class="form-control" name="group_images" accept="image/*" multiple required>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Upload and Detect Faces</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('group-image-upload-container');
+    var addButton = document.createElement('button');
+    addButton.textContent = '+ Add More Images';
+    addButton.type = 'button';
+    addButton.classList = 'btn btn-secondary mb-3';
+    container.appendChild(addButton);
+
+    addButton.addEventListener('click', function () {
+        var newWrapper = document.createElement('div');
+        newWrapper.classList.add('group-image-upload-wrapper', 'mb-3');
+        newWrapper.innerHTML = `
+            <input type="file" class="form-control" name="group_images" accept="image/*" multiple required>
+            <button type="button" class="btn btn-danger remove-field mt-2">Remove</button>
+        `;
+        container.insertBefore(newWrapper, addButton);
+        attachRemoveListeners();
+    });
+
+    function attachRemoveListeners() {
+        document.querySelectorAll('.remove-field').forEach(function (button) {
+            button.addEventListener('click', function () {
+                this.closest('.group-image-upload-wrapper').remove();
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

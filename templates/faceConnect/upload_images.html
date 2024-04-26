@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="upload-form">
+    <h2 class="mb-4 text-bg-white text-white">Upload Faces of Individuals</h2>
+    <form method="post" action="{% url 'faceConnect:upload_individuals' %}" enctype="multipart/form-data" class="mb-3">
+        {% csrf_token %}
+        <div id="image-upload-container">
+            <!-- The dynamic content will be appended here -->
+        </div>
+        <button type="button" id="add-more" class="btn btn-secondary">+ Add More</button>
+        <button type="submit" class="btn btn-primary">Upload Images and Info</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('image-upload-container');
+    var addMoreButton = document.getElementById('add-more');
+
+    addMoreButton.addEventListener('click', function () {
+        var newWrapper = document.createElement('div');
+        newWrapper.innerHTML = `
+            <div class="mb-3 image-upload-wrapper">
+                <input type="file" name="images" accept="image/*" class="form-control mb-2" required>
+                <input type="text" name="name" placeholder="Name" class="form-control mb-2" required>
+                <input type="text" name="mobile_number" placeholder="Mobile Number" class="form-control mb-2" required>
+                <input type="email" name="email" placeholder="Email" class="form-control mb-2" required>
+                <button type="button" class="btn btn-danger remove-field">Remove</button>
+            </div>
+        `;
+        container.appendChild(newWrapper);
+        attachRemoveListeners();
+    });
+
+    function attachRemoveListeners() {
+        document.querySelectorAll('.remove-field').forEach(function (button) {
+            button.addEventListener('click', function () {
+                this.parentElement.remove();
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
