@@ -42,7 +42,13 @@ source env/bin/activate
 env\Scripts\activate
 ```
 
-### 5. Copy Local Settings
+### 5. Install the dependencies
+```bash
+pip3 install -r requirements.txt
+```
+
+
+### 6. Copy Local Settings
 Copy the sample local settings file to create your local configuration:
 ```bash
 cp FaceConnect/sample_local_settings.py FaceConnect/local_settings.py
@@ -52,22 +58,22 @@ cp FaceConnect/sample_local_settings.py FaceConnect/local_settings.py
 copy FaceConnect\sample_local_settings.py FaceConnect\local_settings.py
 ```
 
-### 6. Set Credentials in `local_settings.py`
+### 7. Set Credentials in `local_settings.py`
 Open `local_settings.py` and set the required credentials and settings. Look for `TODO` comments in the file to find what needs to be replaced or filled.
 
-### 7. Apply Migrations
+### 8. Apply Migrations
 Apply the Django database migrations:
 ```bash
 python3 manage.py migrate
 ```
 
-### 8. Create a Superuser
+### 9. Create a Superuser
 Create an administrative user for the Django admin:
 ```bash
 python3 manage.py createsuperuser
 ```
 
-### 9. Run the Development Server
+### 10. Run the Development Server
 Run the development server to start the application:
 ```bash
 python3 manage.py runserver 0:8000
