@@ -11,17 +11,16 @@
                     <h2 class="card-title text-center mb-4">Processed Images and Detected Faces</h2>
                     {% for image_name, details in detected_faces.items %}
                     <div class="card mt-4">
-                        <div class="card-body">
+                        <div class="card-body main-body" style="position: relative;">
                             <h5 class="card-title">{{ image_name }}</h5>
                             <img src="{{ details.url }}" alt="Processed Image" class="img-fluid mb-3">
                             <div>
                                 <strong>Detected Faces:</strong>
                                 <ul>
                                     {% for face in details.faces_found %}
-                                    <li data-image="{{ image_name }}" data-image-url="{{ details.url }}">
-                                        <span class="name"> Name: {{ face.name }}</span>
-                                        <br>
-                                        <span class="email">Email: {{ face.email }}</span>
+                                    <li class='info' data-image="{{ image_name }}" data-email="{{ face.meta.email }}" data-image-url="{{ details.url }}" data-username="{{ face.meta.name }}" data-location="{{ face.location|safe }}" data-location-width="{{ face.width }}" data-location-height="{{ face.height }}">
+                                        <span class="name">Name: {{ face.meta.name }}</span><br>
+                                        <span class="email">Email: {{ face.meta.email }}</span>
                                     </li>
                                     {% endfor %}
                                 </ul>
@@ -42,11 +41,143 @@
 
 {% block javascript %}
 <script>
+
+$(document).ready(function() {
+    setTimeout(renderFaceOverlays, 1000);
+    $(window).resize(renderFaceOverlays);
+});
+
+function renderFaceOverlays() {
+    // Clear existing overlays before re-rendering
+    $('.face-rectangle, .face-name').remove();
+
+    $('.card-body .main-body').each(function() {
+        const container = $(this);
+        const img = container.find('img');
+
+        // Ensure container positioning is relative to place overlays correctly
+        container.css('position', 'relative');
+
+        // Obtain natural (original) dimensions of the image
+        const naturalWidth = img[0].naturalWidth;
+        const naturalHeight = img[0].naturalHeight;
+
+        // Obtain displayed dimensions of the image
+        const displayedWidth = img.width();
+        const displayedHeight = img.height();
+
+        // Calculate scale factors
+        const scaleX = displayedWidth / naturalWidth;
+        const scaleY = displayedHeight / naturalHeight;
+
+        container.find('.info').each(function() {
+            const info = $(this);
+            const location = JSON.parse(info.attr('data-location'));
+            const width = parseInt(info.attr('data-location-width'));
+            const height = parseInt(info.attr('data-location-height'));
+
+            // Scale location and size of the rectangle
+            const scaledLeft = location[3] * scaleX;
+            const scaledTop = location[0] * scaleY + 50;
+            const scaledWidth = width * scaleX;
+            const scaledHeight = height * scaleY;
+
+            // Create the rectangle overlay
+            $('<div/>', {
+                'class': 'face-rectangle', // Added class for easy removal and style isolation
+                css: {
+                    position: 'absolute',
+                    border: '2px solid red',
+                    left: scaledLeft + 'px',
+                    top: scaledTop + 'px',
+                    width: scaledWidth + 'px',
+                    height: scaledHeight + 'px'
+                }
+            }).appendTo(container);
+
+            // Create the name label below the rectangle
+            const nameDiv = $('<div/>', {
+                'class': 'face-name',
+                text: info.attr('data-username'),
+                css: {
+                    position: 'absolute',
+                    left: scaledLeft + 'px',
+                    top: (scaledTop + scaledHeight + 5) + 'px',
+                    color: 'red',
+                    fontWeight: 'bold',
+                    backgroundColor: 'transparent',
+                    padding: '2px 5px',
+                    fontSize: '0.8em',
+                    whiteSpace: 'nowrap',
+                    maxWidth: scaledWidth + 'px', // Set max width to scaled width of rectangle
+                    height: '10px'
+                }
+            }).appendTo(container);
+
+            // Adjust width of the nameDiv based on its content size
+            const nameWidth = nameDiv.outerWidth();
+            if (nameWidth > scaledWidth) {
+                nameDiv.css('width', scaledWidth + 'px'); // Limit width to the rectangle width
+            } else {
+                nameDiv.css('width', nameWidth + 'px'); // Use content width
+            }
+        });
+    });
+}
+
+function sendEmailToAll() {
+    // Getting all the emails and their corresponding images
+    let data = {};
+
+    // Iterate through each item
+    Array.from($('.card-body .main-body .info')).forEach((item) => {
+        let data_image = $(item).attr('data-image');
+        let data_image_url = $(item).attr('data-image-url');
+        let data_username = $(item).attr('data-username');
+        let data_email = $(item).attr('data-email');
+
+        // Check if image URL key exists in data object, if not initialize with an empty array
+        if (!data[data_image_url]) {
+            data[data_image_url] = [];
+        }
+
+        // Add email to the array corresponding to the image URL
+        if (!data[data_image_url].includes(data_email)) {
+            data[data_image_url].push(data_email);
+        }
+    });
+
+    // Create an array to hold image URL and corresponding emails
+    let emails = [];
+    for (let imageUrl in data) {
+        emails.push([imageUrl, data[imageUrl]]);
+    }
+
+    // Fetch POST request to send emails
+    fetch('/send_email/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken') // Ensure CSRF token is available
+        },
+        body: JSON.stringify({
+            type: 'all',
+            emails: emails
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message); // Alert the user about the status
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+
 function sendEmail(imageName, imageUrl) {
-    const emailElements = document.querySelectorAll(`[data-image='${imageName}'] .email`);
+    const emailElements = Array.from($(`[data-image='${imageName}']`));
     let emails = [];
     emailElements.forEach(element => {
-        emails.push(element.textContent);
+        emails.push($(element).attr('data-email'));
     });
     
     fetch('/send_email/', {
@@ -56,6 +187,7 @@ function sendEmail(imageName, imageUrl) {
             'X-CSRFToken': getCookie('csrftoken')  // Ensure CSRF token is available
         },
         body: JSON.stringify({
+            type: 'one',
             emails: emails,
             imageUrl: imageUrl  // Now sending imageUrl along with emails
         })
